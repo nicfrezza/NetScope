@@ -218,6 +218,10 @@ function App() {
   const openSupportCount = filteredSupport
     .filter((ticket) => ticket.status === "open" || ticket.status === "in_progress")
     .length;
+  const showOverview = activePage === "Dashboard";
+  const showCustomers = activePage === "Clientes";
+  const showFinance = activePage === "Financeiro" || activePage === "Boletos";
+  const showSupport = activePage === "Suporte";
 
   const filteredCustomers = customers.filter((customer) =>
     `${customer.name} ${customer.city} ${customer.plan}`
@@ -322,7 +326,7 @@ function App() {
           </section>
 
           <section className="metrics-grid">
-            {activePage === "Boletos" ? null : (
+            {(showOverview || showCustomers) && (
               <>
                 {metrics.map((metric) => {
                   const Icon = metricIcons[metric.label] || TrendingUp;
@@ -345,14 +349,16 @@ function App() {
             )}
           </section>
 
-          <section className="charts-grid">
+          {(showOverview || showCustomers || showFinance) && (
+          <section className={`charts-grid ${showOverview ? "" : "charts-grid-single"}`}>
+            {(showOverview || showFinance) && (
             <article className="panel revenue-panel">
               <div className="panel-heading">
                 <div>
                   <h3>Receita ao longo do tempo</h3>
                   <p>Evolução do faturamento mensal</p>
                 </div>
-                <button className="subtle-button" onClick={() => setActivePage("Boletos")}>Ver relatório <ArrowUpRight size={15} /></button>
+                <button className="subtle-button" onClick={() => setActivePage("Financeiro")}>Ver boletos <ArrowUpRight size={15} /></button>
               </div>
               <div className="chart-legend"><span /> Receita total (R$) · {period}</div>
               <div className="revenue-chart">
@@ -386,7 +392,9 @@ function App() {
                 )}
               </div>
             </article>
+            )}
 
+            {(showOverview || showCustomers) && (
             <article className="panel plans-panel">
               <div className="panel-heading">
                 <div>
@@ -416,9 +424,11 @@ function App() {
                 ))}
               </div>
             </article>
+            )}
           </section>
+          )}
 
-          <section className="panel support-panel">
+          {(showOverview || showSupport) && <section className="panel support-panel">
             <div className="panel-heading">
               <div>
                 <h3>Chamados de suporte</h3>
@@ -448,9 +458,9 @@ function App() {
             ) : (
               <p className="support-empty">Nenhum chamado de suporte encontrado.</p>
             )}
-          </section>
+          </section>}
 
-          <section className="panel customers-panel">
+          {(showOverview || showCustomers) && <section className="panel customers-panel">
             <div className="panel-heading customers-heading">
               <div>
                 <h3>Clientes recentes</h3>
@@ -480,10 +490,10 @@ function App() {
               </table>
             </div>
             <div className="table-footer">Exibindo {filteredCustomers.length} clientes</div>
-          </section>
+          </section>}
           
 
-            {activePage === "Boletos" && (
+            {showFinance && (
               <section className="panel customers-panel">
                 <div className="panel-heading customers-heading">
                   <div>

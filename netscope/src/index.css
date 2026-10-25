@@ -79,6 +79,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .metric-change.negative { color: #f0a26b; }
 .metric-change span { color: #7e8aa0; margin-left: 2px; white-space: nowrap; }
 .charts-grid { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(270px, 1fr); gap: 16px; margin-top: 18px; }
+.charts-grid-single { grid-template-columns: minmax(0, 1fr); }
 .panel { min-width: 0; padding: 20px; }
 .panel-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .panel-heading h3 { margin: 0 0 6px; font: 600 14px Manrope, sans-serif; }
