@@ -28,6 +28,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import Configuracoes from "./pages/Configuracoes";
 import "./index.css";
 
 const metricIcons = {
@@ -92,7 +93,7 @@ function formatInvoiceDate(value) {
 }
 
 function formatInvoiceAmount(invoice) {
-  const amount = Number(invoice.amount ?? invoice.total_amount ?? invoice.total ?? invoice.value);
+  const amount = Number(invoice.amount ?? invoice.total_amount ?? invoice.total ?? invoice.invoice_total ?? invoice.value);
   return Number.isFinite(amount)
     ? amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
     : "—";
@@ -222,12 +223,47 @@ function App() {
   const showCustomers = activePage === "Clientes";
   const showFinance = activePage === "Financeiro" || activePage === "Boletos";
   const showSupport = activePage === "Suporte";
+  const showSettings = activePage === "Configurações";
 
   const filteredCustomers = customers.filter((customer) =>
     `${customer.name} ${customer.city} ${customer.plan}`
       .toLowerCase()
       .includes(search.toLowerCase())
   );
+  const normalizedSearch = search.trim().toLocaleLowerCase("pt-BR");
+  const filteredFinanceInvoices = invoices.filter((invoice) => {
+    if (!normalizedSearch) return true;
+
+    const customerName = invoice.customer_name
+      ?? invoice.customer?.name
+      ?? invoice.customer
+      ?? "";
+    const invoiceNumber = invoice.number
+      ?? invoice.invoice_number
+      ?? invoice.id
+      ?? invoice.invoice_id
+      ?? "";
+    const dueDate = invoice.due_date
+      ?? invoice.due_at
+      ?? invoice.created_at
+      ?? invoice.issue_date
+      ?? invoice.invoice_date;
+    const status = invoice.status
+      ?? invoice.invoice_status
+      ?? invoice.payment_status
+      ?? "";
+    const searchableValues = [
+      invoiceNumber,
+      customerName,
+      formatInvoiceDate(dueDate),
+      formatInvoiceAmount(invoice),
+      status,
+    ];
+
+    return searchableValues.some((value) =>
+      String(value).toLocaleLowerCase("pt-BR").includes(normalizedSearch)
+    );
+  });
 
   const navigation = [
     { label: "Dashboard", icon: LayoutDashboard },
@@ -273,7 +309,13 @@ function App() {
               <span>{dataStatus === "connected" ? "Conectado ao banco" : dataStatus === "loading" ? "Carregando dados..." : "Falha ao carregar dados"}</span>
             </div>
           </div>
-          <button className="nav-item settings-item">
+          <button
+            className={`nav-item settings-item ${showSettings ? "active" : ""}`}
+            onClick={() => {
+              setActivePage("Configurações");
+              setMenuOpen(false);
+            }}
+          >
             <Settings size={19} />
             <span>Configurações</span>
           </button>
@@ -312,9 +354,15 @@ function App() {
         </header>
 
         <div className="page-content">
-          <section className="welcome-row">
+          {!showSettings && <section className="welcome-row">
             <div>
-              <div className="eyebrow">SEXTA-FEIRA, 23 DE OUTUBRO</div>
+              <div className="eyebrow">
+                {new Date().toLocaleDateString("pt-BR", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                }).toUpperCase()}
+              </div>
               <h2>{activePage === "Dashboard" ? "Visão geral" : activePage}</h2>
               <p>Acompanhe o desempenho da sua operação em um só lugar.</p>
             </div>
@@ -323,7 +371,9 @@ function App() {
               <option>Últimos 6 meses</option>
               <option>Últimos 30 dias</option>
             </select>
-          </section>
+          </section>}
+
+          {showSettings && <Configuracoes />}
 
           <section className="metrics-grid">
             {(showOverview || showCustomers) && (
@@ -510,24 +560,24 @@ function App() {
                       <tr><th>BOLETO</th><th>CLIENTE</th><th>VENCIMENTO</th><th>VALOR</th><th>STATUS</th></tr>
                     </thead>
                     <tbody>
-                      {invoices.map((invoice, index) => {
+                      {filteredFinanceInvoices.map((invoice, index) => {
                         const id = invoice.id ?? invoice.invoice_id ?? invoice.number ?? index + 1;
-                        const status = invoice.status ?? invoice.payment_status ?? "—";
+                        const status = invoice.status ?? invoice.invoice_status ?? invoice.payment_status ?? "—";
                         return (
                           <tr key={id}>
                             <td>{invoice.number ?? invoice.invoice_number ?? invoice.id ?? `Boleto ${index + 1}`}</td>
                             <td>{invoice.customer_name ?? invoice.customer?.name ?? invoice.customer ?? "—"}</td>
-                            <td>{formatInvoiceDate(invoice.due_date ?? invoice.due_at ?? invoice.created_at ?? invoice.issue_date)}</td>
+                            <td>{formatInvoiceDate(invoice.due_date ?? invoice.due_at ?? invoice.created_at ?? invoice.issue_date ?? invoice.invoice_date)}</td>
                             <td>{formatInvoiceAmount(invoice)}</td>
                             <td><span className={`status-pill ${/pago|paid|quitado/i.test(status) ? "status-active" : "status-inactive"}`}><span />{status}</span></td>
                           </tr>
                         );
                       })}
-                      {invoices.length === 0 && <tr><td colSpan="5" className="empty-state">Nenhum boleto encontrado.</td></tr>}
+                      {filteredFinanceInvoices.length === 0 && <tr><td colSpan="5" className="empty-state">Nenhum boleto encontrado.</td></tr>}
                     </tbody>
                   </table>
                 </div>
-                <div className="table-footer">Exibindo {invoices.length} boletos</div>
+                <div className="table-footer">Exibindo {filteredFinanceInvoices.length} boletos</div>
               </section>
             )}
 
